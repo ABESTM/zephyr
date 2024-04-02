@@ -1,0 +1,5 @@
+board:
+  name: nucleo_h503rb
+  vendor: st
+  socs:
+    - name: stm32h503xx
