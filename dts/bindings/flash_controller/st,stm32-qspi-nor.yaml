@@ -39,6 +39,9 @@ properties:
   reset-cmd:
     type: boolean
     description: Send reset command on initialization
+  memory-mapped:
+    type: boolean
+    description: Activate memory mapped mode
   dual-flash:
     type: boolean
     description: Activate memory mapped mode

@@ -34,6 +34,7 @@
 
 #define STM32_QSPI_RESET_GPIO DT_INST_NODE_HAS_PROP(0, reset_gpios)
 #define STM32_QSPI_RESET_CMD DT_INST_NODE_HAS_PROP(0, reset_cmd)
+#define STM32_QSPI_MEMORYMAPPED DT_INST_NODE_HAS_PROP(0, memory_mapped)
 #define STM32_QSPI_DUALFLASH DT_INST_NODE_HAS_PROP(0, dual_flash)
 
 #include <stm32_ll_dma.h>
@@ -426,6 +427,49 @@ static int flash_stm32_qspi_read(const struct device *dev, off_t addr,
 
 	return ret;
 }
+
+#if STM32_QSPI_MEMORYMAPPED
+static int flast_stm32_qspi_memmapped(const struct device *dev){
+	int ret = 0;
+
+	struct flash_stm32_qspi_data *dev_data = dev->data;
+
+	QSPI_CommandTypeDef cmd = {
+		.Instruction = SPI_NOR_CMD_READ,
+		.Address = 0,
+		.InstructionMode = QSPI_INSTRUCTION_1_LINE,
+		.AddressMode = QSPI_ADDRESS_1_LINE,
+		.DataMode = QSPI_DATA_1_LINE,
+		.NbData = 0,
+		.DummyCycles = 0,
+		.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE,
+		.DdrMode = QSPI_DDR_MODE_DISABLE,
+		.SIOOMode = QSPI_SIOO_INST_EVERY_CMD,
+	};
+
+	QSPI_MemoryMappedTypeDef conf = {
+		.TimeOutPeriod = 0,
+		.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE,
+	};
+
+	qspi_set_address_size(dev, &cmd);
+	if (IS_ENABLED(STM32_QSPI_USE_QUAD_IO)) {
+		ret = qspi_prepare_quad_read(dev, &cmd);
+		if (ret < 0) {
+			LOG_DBG("Quad mode failed!");
+			return ret;
+		}
+		LOG_DBG("Quad mode used for memory mapped");
+	}
+
+	HAL_QSPI_MemoryMapped(&dev_data->hqspi, &cmd, &conf);
+	__ISB();
+	SCB_InvalidateICache();
+	SCB_InvalidateDCache();
+
+	return ret;
+}
+#endif
 
 static int qspi_wait_until_ready(const struct device *dev)
 {
@@ -1372,6 +1416,10 @@ static int flash_stm32_qspi_init(const struct device *dev)
 	HAL_QSPI_DeInit(&dev_data->hqspi);
 	dev_data->hqspi.Init.DualFlash = QSPI_DUALFLASH_ENABLE;
 	HAL_QSPI_Init(&dev_data->hqspi);
+#endif
+
+#if STM32_QSPI_MEMORYMAPPED
+	flast_stm32_qspi_memmapped(dev);
 #endif
 
 	LOG_INF("NOR quad-flash at 0x%lx (0x%x bytes)",
