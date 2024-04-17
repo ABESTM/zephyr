@@ -1,0 +1,1 @@
+include(${APPLICATION_CONFIG_DIR}/boards/${BOARD}.cmake OPTIONAL)
