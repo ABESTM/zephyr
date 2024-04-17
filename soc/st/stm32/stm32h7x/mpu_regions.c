@@ -8,6 +8,15 @@
 #include <zephyr/arch/arm/cortex_m/arm_mpu_mem_cfg.h>
 
 static const struct arm_mpu_region mpu_regions[] = {
+	/*
+	 * Prevents access (incl. speculative) to external memories
+	 * in address range (0x60000000 - 0x9FFFFFFF).
+	 */
+	MPU_REGION_ENTRY("CORE", 0x0,
+					{ (STRONGLY_ORDERED_SHAREABLE |
+					REGION_4G |
+					NO_ACCESS_Msk |
+					((0xE7) << 8)) }), /* Subregion disable = 0xE7 */
 	MPU_REGION_ENTRY("FLASH", CONFIG_FLASH_BASE_ADDRESS,
 					 REGION_FLASH_ATTR(REGION_FLASH_SIZE)),
 	MPU_REGION_ENTRY("SRAM", CONFIG_SRAM_BASE_ADDRESS,
