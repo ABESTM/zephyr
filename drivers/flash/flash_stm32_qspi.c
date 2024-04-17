@@ -34,6 +34,7 @@
 
 #define STM32_QSPI_RESET_GPIO DT_INST_NODE_HAS_PROP(0, reset_gpios)
 #define STM32_QSPI_RESET_CMD DT_INST_NODE_HAS_PROP(0, reset_cmd)
+#define STM32_QSPI_DUALFLASH DT_INST_NODE_HAS_PROP(0, dual_flash)
 
 #include <stm32_ll_dma.h>
 
@@ -1366,6 +1367,12 @@ static int flash_stm32_qspi_init(const struct device *dev)
 		return -ENODEV;
 	}
 #endif /* CONFIG_FLASH_PAGE_LAYOUT */
+
+#if STM32_QSPI_DUALFLASH
+	HAL_QSPI_DeInit(&dev_data->hqspi);
+	dev_data->hqspi.Init.DualFlash = QSPI_DUALFLASH_ENABLE;
+	HAL_QSPI_Init(&dev_data->hqspi);
+#endif
 
 	LOG_INF("NOR quad-flash at 0x%lx (0x%x bytes)",
 		(long)(STM32_QSPI_BASE_ADDRESS),
