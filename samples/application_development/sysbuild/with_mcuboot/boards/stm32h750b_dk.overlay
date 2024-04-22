@@ -1,0 +1,35 @@
+&ext_memory {
+	zephyr,memory-attr = <( DT_MEM_ARM(ATTR_MPU_FLASH) )>;
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x0 DT_SIZE_K(128)>;
+		};
+    };
+};
+
+&mt25ql512ab1 {
+	memory-mapped;
+	dual-flash;
+
+    partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            partition@0 {
+                reg = <0x0 DT_SIZE_M(32)>;
+            };
+
+            partition@0x2000000 {
+                reg = <0x2000000 DT_SIZE_M(32)>;
+            };
+    };
+};

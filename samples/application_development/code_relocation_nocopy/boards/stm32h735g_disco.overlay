@@ -1,0 +1,13 @@
+/ {
+	aliases {
+		spi-flash0 = &mx25lm51245;
+	};
+};
+
+&ext_memory {
+	zephyr,memory-attr = <( DT_MEM_ARM(ATTR_MPU_FLASH) )>;
+};
+
+&mx25lm51245 {
+	memory-mapped;
+};

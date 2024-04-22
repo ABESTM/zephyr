@@ -1,0 +1,8 @@
+&ext_memory {
+	zephyr,memory-attr = <( DT_MEM_ARM(ATTR_MPU_FLASH) )>;
+};
+
+&mt25ql512ab1 {
+	memory-mapped;
+	dual-flash;
+};

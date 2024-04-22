@@ -26,6 +26,13 @@
 #define EXTFLASH_SIZE	DT_PROP_OR(EXTFLASH_NODE, size_in_bytes, \
 				   DT_PROP(EXTFLASH_NODE, size) / 8)
 
+#elif defined(CONFIG_FLASH_STM32_QSPI) || defined(CONFIG_FLASH_STM32_OSPI)
+
+#define EXTFLASH_NODE	DT_INST(0, st_stm32_qspi_nor)
+#define EXTFLASH_ADDR	0x90000000
+#define EXTFLASH_SIZE	DT_PROP_OR(EXTFLASH_NODE, size_in_bytes, \
+				   DT_PROP(EXTFLASH_NODE, size) / 8)
+
 #else
 
 /*
