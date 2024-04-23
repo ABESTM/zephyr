@@ -102,3 +102,9 @@ properties:
       * 2READ 1-2-2 (0xBB) -> 2READ 1-2-2 4B (0xBC)
       * QREAD 1-1-4 (0x6B) -> QREAD 1-1-4 4B (0x6C)
       * 4READ 1-4-4 (0xEB) -> 4READ 1-4-4 4B (0xEC)
+  write-block-size:
+    type: int
+    required: false
+  erase-block-size:
+    type: int
+    required: false
