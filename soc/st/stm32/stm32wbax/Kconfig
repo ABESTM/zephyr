@@ -17,3 +17,4 @@ config SOC_SERIES_STM32WBAX
 	select USE_STM32_HAL_CORTEX
 	select HAS_PM
 	select SOC_EARLY_INIT_HOOK
+	select HAS_SWO
