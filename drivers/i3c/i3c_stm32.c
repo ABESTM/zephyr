@@ -570,6 +570,26 @@ static int i3c_stm32_calc_scll_pp_sclh_i3c(uint32_t i3c_bus_freq, uint32_t i3c_c
 	return 0;
 }
 
+static uint32_t i3c_stm32_push_i2c_timing(const struct device *dev){
+	const struct i3c_stm32_config *cfg = dev->config;
+	I3C_TypeDef *i3c = cfg->i3c;
+	uint32_t result = LL_I3C_GetClockWaveForm(i3c);
+	uint32_t en = LL_I3C_IsEnabled(i3c);
+	if(en) LL_I3C_Disable(i3c);
+	LL_I3C_ConfigClockWaveForm(i3c, (result & 0xFFFF0000) | ((result >> 16) & 0xFFFF));
+	if(en) LL_I3C_Enable(i3c);
+	return result;
+}
+
+static void i3c_stm32_pop_i2c_timing(const struct device *dev, uint32_t val){
+	const struct i3c_stm32_config *cfg = dev->config;
+	I3C_TypeDef *i3c = cfg->i3c;
+	uint32_t en = LL_I3C_IsEnabled(i3c);
+	if(en) LL_I3C_Disable(i3c);
+	LL_I3C_ConfigClockWaveForm(i3c, val);
+	if(en) LL_I3C_Enable(i3c);
+}
+
 static int i3c_stm32_config_clk_wave(const struct device *dev)
 {
 	const struct i3c_stm32_config *cfg = dev->config;
@@ -1574,11 +1594,14 @@ static int i3c_stm32_init(const struct device *dev)
 
 	/* Perform bus initialization only if there are devices that already exist on the bus */
 	if (config->drv_cfg.dev_list.num_i3c > 0) {
+		uint32_t t = i3c_stm32_push_i2c_timing(dev);
 		ret = i3c_bus_init(dev, &config->drv_cfg.dev_list);
 		if (ret != 0) {
+			i3c_stm32_pop_i2c_timing(dev,t);
 			LOG_ERR("Failed to do i3c bus init, err=%d", ret);
 			return ret;
 		}
+		i3c_stm32_pop_i2c_timing(dev,t);
 	}
 
 #ifdef CONFIG_I3C_USE_IBI
