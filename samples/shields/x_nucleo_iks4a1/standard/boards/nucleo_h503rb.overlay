@@ -1,0 +1,12 @@
+
+&clk_hsi {
+    status = "okay";
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&i3c1 {
+	status = "okay";
+}; 
