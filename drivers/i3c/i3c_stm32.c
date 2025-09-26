@@ -121,6 +121,7 @@ struct i3c_stm32_config {
 
 struct i3c_stm32_data {
 	struct i3c_driver_data drv_data;     /* I3C driver data */
+	uint32_t i3c_sclh_min;
 	enum i3c_stm32_msg_state msg_state;  /* Current I3C bus state */
 	enum i3c_stm32_sf_state sf_state;    /* Current I3C status FIFO state */
 	struct i3c_ccc_payload *ccc_payload; /* Current CCC message payload */
@@ -555,9 +556,10 @@ static int i3c_stm32_calc_scll_od_sclh_i2c(const struct device *dev, uint32_t i2
 }
 
 static int i3c_stm32_calc_scll_pp_sclh_i3c(uint32_t i3c_bus_freq, uint32_t i3c_clock,
-					   uint8_t *scll_pp, uint8_t *sclh_i3c)
+					   uint8_t *scll_pp, uint8_t *sclh_i3c,
+					   uint32_t min_sclh)
 {
-	*sclh_i3c = DIV_ROUND_UP(STM32_I3C_SCLH_I3C_MIN_NS * i3c_clock, 1000000000ull) - 1;
+	*sclh_i3c = DIV_ROUND_UP(((unsigned long long) min_sclh) * i3c_clock, 1000000000ull) - 1;
 	*scll_pp = DIV_ROUND_UP(i3c_clock, i3c_bus_freq) - *sclh_i3c - 2;
 
 	if (*scll_pp < DIV_ROUND_UP(STM32_I3C_SCLL_PP_MIN_NS * i3c_clock, 1000000000ull) - 1) {
@@ -625,7 +627,7 @@ static int i3c_stm32_config_clk_wave(const struct device *dev)
 		return ret;
 	}
 
-	ret = i3c_stm32_calc_scll_pp_sclh_i3c(i3c_bus_freq, i3c_clock, &scll_pp, &sclh_i3c);
+	ret = i3c_stm32_calc_scll_pp_sclh_i3c(i3c_bus_freq, i3c_clock, &scll_pp, &sclh_i3c, data->i3c_sclh_min);
 	if (ret != 0) {
 		LOG_ERR("Cannot calculate the timing for TimingReg0, err=%d", ret);
 		return ret;

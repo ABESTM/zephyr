@@ -31,3 +31,9 @@ properties:
 
       For example
          dma-names = "rx", "tx", "tc", "rs";
+
+  i3c-sclh:
+    type: int
+    default: 32
+    description: |
+      Requested SCL high pulse in I3C mode in ns
