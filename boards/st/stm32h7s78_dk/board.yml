@@ -4,3 +4,6 @@ board:
   vendor: st
   socs:
     - name: stm32h7s7xx
+      variants:
+        - name: extmem
+        - name: mcuboot

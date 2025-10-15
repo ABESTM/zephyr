@@ -1,0 +1,9 @@
+#include "stm32h7s78_dk.dts"
+
+/ {
+    chosen {
+		  zephyr,flash = &mx66uw1g45;
+      zephyr,flash-controller = &xspi2;
+		  zephyr,code-partition = &slot0_partition;
+    };
+};

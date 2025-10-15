@@ -1,0 +1,8 @@
+#include "stm32h7s78_dk.dts"
+
+/ {
+    chosen {
+		zephyr,flash = &flash0;
+        zephyr,flash-controller = &flash;
+    };
+};

@@ -6,6 +6,13 @@ if(CONFIG_XIP AND (CONFIG_STM32_MEMMAP OR CONFIG_BOOTLOADER_MCUBOOT))
   board_runner_args(stm32cubeprogrammer "--extload=MX66UW1G45G_STM32H7S78-DK.stldr")
 endif()
 
+if(CONFIG_BOOTLOADER_MCUBOOT)
+  set(app_base_addr 0x70000000)
+  dt_nodelabel(slot0_partition NODELABEL "slot0_partition" REQUIRED)
+  dt_reg_addr(slot0_partition_addr PATH ${slot0_partition})
+  math(EXPR app_base_addr "${app_base_addr} + ${slot0_partition_addr}")
+endif()
+
 board_runner_args(openocd --target-handle=_CHIPNAME.cpu0)
 
 board_runner_args(pyocd "--target=stm32h7s7l8hxh")
