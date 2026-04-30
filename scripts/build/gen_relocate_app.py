@@ -292,6 +292,7 @@ def assign_to_correct_mem_region(
 
     keep_sections = '|NOKEEP' not in memory_region
     memory_region = memory_region.replace('|NOKEEP', '')
+    memory_region = memory_region.replace('|CUSTOM', '')
 
     output_sections = {}
     for used_kind in use_section_kinds:
@@ -621,6 +622,10 @@ def create_dict_wrt_mem():
         file_name_list = []
         # Use glob matching on each file in the list
         for file_glob in file_list:
+            if "CUSTOM" in flag_list:
+                file_name_list.extend([file_glob])
+                continue
+
             glob_results = glob.glob(file_glob)
             if not glob_results:
                 warnings.warn("File: " + file_glob + " Not found", stacklevel=2)
@@ -672,7 +677,24 @@ def main():
         full_list_of_sections: dict[SectionKind, list[OutputSection]] = defaultdict(list)
 
         for filename, symbol_filter in files:
-            obj_filename = get_obj_filename(all_obj_files, filename)
+            if "|CUSTOM" in memory_type:
+
+                # cleanup and attach the sections to the memory type after cleanup.
+                sections_by_category = assign_to_correct_mem_region(memory_type, full_list_of_sections)
+                for region, section_category_map in sections_by_category.items():
+                    categories, memregion = section_kinds_from_memory_region(memory_type)
+                    for category in categories:
+                        #*library.a:*(.text*)
+                        #complete_list_of_sections[region][category].extend([OutputSection(Path(filename).name+":*", "."+category.name+"*", False)])
+                        if filename == "*":
+                            complete_list_of_sections[region][category].extend([OutputSection("", symbol_filter, False)])
+                        else:
+                            complete_list_of_sections[region][category].extend([OutputSection(Path(filename).name+":*", symbol_filter, False)])
+
+                continue
+            else:
+                obj_filename = get_obj_filename(all_obj_files, filename)
+
             # the obj file wasn't found. Probably not compiled.
             if not obj_filename:
                 continue
