@@ -292,6 +292,7 @@ def assign_to_correct_mem_region(
 
     keep_sections = '|NOKEEP' not in memory_region
     memory_region = memory_region.replace('|NOKEEP', '')
+    memory_region = memory_region.replace('|SECTION', '')
 
     output_sections = {}
     for used_kind in use_section_kinds:
@@ -322,6 +323,8 @@ def section_kinds_from_memory_region(memory_region: str) -> 'tuple[set[SectionKi
         if specifier in memory_region:
             out.add(kind)
             memory_region = memory_region.replace(specifier, "")
+    if (len(out) != 1) and ("|SECTION" in memory_region):
+        warnings.warn("Section specific entries should have specified single kind e.g. RAM_TEXT")
     if not out:
         # No listed kinds implies all of the kinds
         out = set(SectionKind)
@@ -621,6 +624,10 @@ def create_dict_wrt_mem():
         file_name_list = []
         # Use glob matching on each file in the list
         for file_glob in file_list:
+            if "SECTION" in flag_list:
+                file_name_list.extend([file_glob])
+                continue
+
             glob_results = glob.glob(file_glob)
             if not glob_results:
                 warnings.warn("File: " + file_glob + " Not found", stacklevel=2)
@@ -672,7 +679,16 @@ def main():
         full_list_of_sections: dict[SectionKind, list[OutputSection]] = defaultdict(list)
 
         for filename, symbol_filter in files:
-            obj_filename = get_obj_filename(all_obj_files, filename)
+            if "|SECTION" in memory_type:
+                categories, memregion = section_kinds_from_memory_region(memory_type)
+                for category in categories:
+                    for section in symbol_filter.split(";"):
+                        full_list_of_sections[category].extend([OutputSection(filename, section)])
+
+                continue
+            else:
+                obj_filename = get_obj_filename(all_obj_files, filename)
+
             # the obj file wasn't found. Probably not compiled.
             if not obj_filename:
                 continue

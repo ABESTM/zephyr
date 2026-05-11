@@ -1605,6 +1605,89 @@ function(zephyr_code_relocate)
     "${code_rel_str}\n${CODE_REL_LOCATION}:${flag_list}:${file_list},${CODE_REL_FILTER}")
 endfunction()
 
+# Helper macro for conditionally calling zephyr_section_relocate() when a
+# specific Kconfig symbol is enabled. See zephyr_section_relocate() description
+# for supported arguments.
+macro(zephyr_section_relocate_ifdef feature_toggle)
+  if(${${feature_toggle}})
+    zephyr_section_relocate(${ARGN})
+  endif()
+endmacro()
+
+# Helper function for CONFIG_CODE_DATA_RELOCATION
+# Similar to zephyr_code_relocate, but allows user to specify directly
+# the object file and sections names.
+# This works by adding "SECTIONS" in relocation_dict.txt entry.
+#
+# When the OBJECT_FILE is not specified, all object files will be taken
+# into account, using the wildcard inside the linker script.
+# Static libraries can also be used in OBJECT_FILE definition,
+# e.g. "library.a:module.o".
+function(zephyr_section_relocate)
+  set(options NOCOPY NOKEEP)
+  set(single_args OBJECT_FILE LOCATION PHDR)
+  set(multi_args SECTIONS)
+  cmake_parse_arguments(CODE_REL "${options}" "${single_args}"
+    "${multi_args}" ${ARGN})
+
+  # Argument validation
+  if(CODE_REL_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "zephyr_section_relocate(${ARGV0} ...) "
+      "given unknown arguments: ${CODE_REL_UNPARSED_ARGUMENTS}")
+  endif()
+  if(NOT CODE_REL_SECTIONS)
+    message(FATAL_ERROR "zephyr_section_relocate() requires a SECTIONS argument")
+  endif()
+  if(NOT CODE_REL_LOCATION)
+    message(FATAL_ERROR "zephyr_section_relocate() requires a LOCATION argument")
+  endif()
+  # There should be single "kind" suffix, otherwise the section(s) will be placed to multiple
+  # output sections. This is probably what used doesn't want.
+  # However the CMake only checks if there is any kind specified.
+  string(FIND "${CODE_REL_LOCATION}" "_" kind)
+  if(kind EQUAL -1)
+    message(FATAL_ERROR "Please specify section kind like RAM_TEXT")
+  endif()
+
+  if(NOT CODE_REL_NOCOPY)
+    set(flag_list COPY)
+  else()
+    set(flag_list NOCOPY)
+  endif()
+  if(CODE_REL_NOKEEP)
+    list(APPEND flag_list NOKEEP)
+  endif()
+  if(CODE_REL_PHDR)
+    set(CODE_REL_LOCATION "${CODE_REL_LOCATION}\ :${CODE_REL_PHDR}")
+  endif()
+  # Mark this entry as custom section
+  list(APPEND flag_list SECTION)
+
+  # Check if CODE_REL_SECTIONS is a generator expression, if so leave it
+  # untouched.
+  string(GENEX_STRIP "${CODE_REL_SECTIONS}" no_genex)
+  if(CODE_REL_SECTIONS STREQUAL no_genex)
+    # no generator expression in CODE_REL_SECTIONS, check if list of files
+    # is absolute
+    foreach(section ${CODE_REL_SECTIONS})
+      list(APPEND section_list ${section})
+    endforeach()
+  else()
+    # Generator expression is present in file list. Leave the list untouched.
+    set(section_list ${CODE_REL_SECTIONS})
+  endif()
+
+  # Each code relocation directive is placed on an independent line, instead of
+  # using set_property(APPEND) to produce a ";"-separated CMake list. This way,
+  # each directive can embed multiple CMake lists, representing flags and files,
+  # the latter of which can come from generator expressions.
+  get_property(code_rel_str TARGET code_data_relocation_target
+    PROPERTY INTERFACE_SOURCES)
+  set_property(TARGET code_data_relocation_target
+    PROPERTY INTERFACE_SOURCES
+    "${code_rel_str}\n${CODE_REL_LOCATION}:${flag_list}:${CODE_REL_OBJECT_FILE},${section_list}")
+endfunction()
+
 # Usage:
 #   check_dtc_flag("-Wtest" DTC_WARN_TEST)
 #
